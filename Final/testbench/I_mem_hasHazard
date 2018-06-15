@@ -1,0 +1,124 @@
+00000000000000000000000000000000 	 //nop                         nop                                                
+001000_00000_111100000100100110010   //addi $30   $0               addi    r30,r0, 0x0932                             
+000011_00000_000000000000000001000   //jal   8                     jal     OutputTestPort      		           
+000011_00000_000000000000000001010   //jal   0A                    jal     FibunacciSeries     		           
+000011_00000_000000000000000100011   //jal   23                    jal     BubbleSort          		           
+001000_00000_111100000110101011101   //addi $30   $0   0d5d        addi    r30,r0, 0x0D5D      		           
+000011_00000_000000000000000001000   //jal   8                     jal     OutputTestPort      		           
+000010_00000_000000000000000111010   //j     3A                    j	   Trap
+101011_00000_1111000000_00100_000000 //sw   $30   $0  0100         sw      r30, r0, 0x0100                         
+000000_11111_000000000000000001000   //jr   $31                    jr      r31                 		           
+000000_11111_0000011101_00000_100000 //add  $29  $31   $0          add     r29,r31,r0          		           
+001000_00000_0001100000_00000_001110 //addi $3  $0   14            addi    r3, r0, 0x000e      ( modify1 for 0-610(number:16) r3 = 16-2 = 14 )       
+001000_00000_0000100000_00000_000000 //addi $1  $0   0000          addi    r1, r0, 0x0000      		           
+001000_00000_0001000000_00000_000001 //addi $2  $0   0001          addi    r2, r0, 0x0001      		           
+001000_00000_0010000000_00000_000000 //addi $4  $0   0000          addi    r4, r0, 0x0000      		           
+101011_00100_0000100000_00000_000000 //sw   $1  $4   0000          sw      r1, r4, 0x0000      		           
+001000_00100_0010000000_00000_000100 //addi $4  $4   0004          addi    r4, r4, 0x0004      		           
+101011_00100_0001000000_00000_000000 //sw   $2  $4   0000          sw      r2, r4, 0x0000      		           
+000000_00001_0000011110_00000_100000 //add  $30  $1   $0           add     r30,r1, r0                                 
+000011_00000_000000000000000001000   //jal   8                     jal     OutputTestPort                             
+000000_00010_0000011110_00000_100000 //add  $30  $2   $0           add     r30,r2, r0                                 
+000011_00000_000000000000000001000   //jal   8                     jal     OutputTestPort                             
+000100_00011_000000000000000001011   //beq  $3  $0  B              beq     r3, r0, FibunacciLoopExit                  
+001000_00100_0010000000_00000_000100 //addi $4  $4   0004          addi    r4, r4, 0x0004                             
+000000_00010_0000100101_00000_100000 //add  $5  $2   $1            add     r5, r2, r1          		           
+000000_00010_0000000001_00000_100000 //add  $1  $2   $0            add     r1, r2, r0          		           
+000000_00101_0000000010_00000_100000 //add  $2  $5   $0            add     r2, r5, r0          		           
+101011_00100_0001000000_00000_000000 //sw   $2  $4   0000          sw      r2, r4, 0x0000      		           
+001000_00011_0001111111_11111_111111 //addi $3  $3   ffff          addi    r3, r3, 0xffff      		           
+000000_00010_0000011110_00000_100000 //add  $30  $2   $0           add     r30,r2, r0          		           
+000011_00000_000000000000000001000   //jal   8                     jal     OutputTestPort      		           
+000010_00000_000000000000000010110   //j     16                    j       FibunacciLoop       		           
+000000_00010_0001000010_00000_100010 //sub  $2  $2  $2             sub     r2, r2, r2          		           
+000000_00001_0000100001_00000_100010 //sub  $1  $1  $1             sub     r1, r1, r1          		           
+000000_11101_000000000000000001000   //jr    $29                   jr      r29                 		           
+000000_11111_0000011101_00000_100000 //add  $29  $31   $0          add     r29,r31,r0          		           
+001000_00000_0011100000_00000_111100 //addi $7  $0  0x003c         addi    r7, r0, 60       ( modify2 for r7 = 4*(number-1) = 60 )	           
+000100_00111_000000000000000001100   //beq  $7  $0  c              beq     r7, r0, BubbleOutLoopExit           
+000000_00000_0000000001_00000_100000 //add  $1  $0   $0            add     r1, r0, r0          		    						                   
+000100_00001_001110000000000001000   //beq  $1  $7  8              beq     r1, r7, BubbleInLoopExit                
+100011_00001_0001100000_00000_000000 //lw   $3  $1  0000           lw      r3, r1, 0x0000                             
+100011_00001_0010000000_00000_000100 //lw   $4  $1  0004           lw      r4, r1, 0x0004		                   
+000000_00011_0010000101_00000_101010 //slt  $5  $4   $3            slt     r5, r3, r4                             
+000100_00101_000000000000000000010   //beq  $5  $0  2              beq     r5, r0, SwapExit                       
+101011_00001_0010000000_00000_000000 //sw   $4  $1   0000          sw      r4, r1, 0x0000                         
+101011_00001_0001100000_00000_000100 //sw   $3  $1   0004          sw      r3, r1, 0x0004                         
+001000_00001_0000100000_00000_000100 //add  $1  $1   0004          add     r1, r1, 0x0004                         
+000010_00000_000000000000000100111   //j     27                    j       BubbleInLoop                           
+001000_00111_0011111111_11111_111100 //sub  $7  $7  0004           sub     r7, r7, 0x0004                         
+000010_00000_000000000000000100101   //j     25                    j       BubbleOutLoop                          
+000000_00000_0000000001_00000_100000 //add  $1  $0   $0            add     r1, r0, r0                             
+001000_00000_001110000000001000000   //addi $7  $0   0x0040        addi    r7, r0, 64       ( modify3 for r7 = 4*number = 64 )     
+000100_00001_001110000000000000100   //beq  $1  $7   4             beq     r1, r7, BubbleSortExit                 
+100011_00001_1111000000_00000_000000 //lw   $30  $1  0000          lw      r30,r1, 0x0000                         
+001000_00001_0000100000_00000_000100 //addi $1  $1   0004          addi    r1, r1, 0x0004                         
+000011_00000_000000000000000001000   //jal   8                     jal     OutputTestPort                         
+000010_00000_000000000000000110100   //j     34                    j       OutputSortedSeries                         
+000000_11101_000000000000000001000   //jr   $29                    jr      r29                                        
+000010_00000_000000000000000111010   //j     3A                    j	   Trap                               
+00000000000000000000000000000000     //nop                         nop
+
+//testoutput : store register $30 to memory 256                                                                            
+//Instruction Address, Label	           Instruction			                     Comment
+//-------------------------------------------------------------------------------------------------------
+//	0x00	                        nop
+//	0x01	Main:                   addi    r30,r0, 0x0932  
+//	0x02	                        jal     OutputTestPort      		// Indicate that simulation begin
+//	0x03	                        jal     FibunacciSeries     		
+//	0x04	                        jal     BubbleSort          		
+//	0x05	                        addi    r30,r0, 0x0D5D      		
+//	0x06	                        jal     OutputTestPort      		// Indicate that simulation finish
+//	0x07	                        j		Trap
+//	0x08	OutputTestPort:         sw      r30, r0, 0x0100     		// put output value in r30
+//	0x09	                        jr      r31                 		// jump back to caller
+//	0x0A	FibunacciSeries:        add     r29,r31,r0          		
+//	0x0B	                        addi    r3, r0, 0x000e      		// r3==14                 ( modify1 for 0-610(number:16) r3 = 16-2 = 14 ) 
+//	0x0C	                        addi    r1, r0, 0x0000      		// r1==0, t==0
+//	0x0D	                        addi    r2, r0, 0x0001      		// r2==1, t==1
+//	0x0E	                        addi    r4, r0, 0x0000      		// 0x0000 store f(0)
+//	0x0F	                        sw      r1, r4, 0x0000      		
+//	0x10	                        addi    r4, r4, 0x0004      		// increment of r4 by 4
+//	0x11	                        sw      r2, r4, 0x0000      		// 0x0004 store f(1)
+//	0x12	                        add     r30,r1, r0  
+//	0x13	                        jal     OutputTestPort
+//	0x14	                        add     r30,r2, r0  
+//	0x15	                        jal     OutputTestPort
+//	0x16	FibunacciLoop:          beq     r3, r0, FibunacciLoopExit   
+//	0x17	                        addi    r4, r4, 0x0004  
+//	0x18	                        add     r5, r2, r1          		// r5 become f(t+1)
+//	0x19	                        add     r1, r2, r0          		// replace r1 by r2, f(t)
+//	0x1A	                        add     r2, r5, r0          		// replace r2 by r5, f(t+1)
+//	0x1B	                        sw      r2, r4, 0x0000      		// store r2, f(t+1)
+//	0x1C	                        addi    r3, r3, 0xffff      		// r3 = r3 - 1 
+//	0x1D	                        add     r30,r2, r0          		// output fibunacci series
+//	0x1E	                        jal     OutputTestPort      		
+//	0x1F	                        j       FibunacciLoop       		
+//	0x20	                        sub     r2, r2, r2          		// never be executed
+//	0x21	                        sub     r1, r1, r1          		// never be executed    
+//	0x22	FibunacciLoopExit:      jr      r29                 		
+//	0x23	BubbleSort:             add     r29,r31,r0          		
+//	0x24	                        addi    r7, r0, 0x003c      		// from 3c to 0, 60~0     ( modify2 for r7 = 4*(number-1) = 60 )   
+//	0x25	BubbleOutLoop:          beq     r7, r0, BubbleOutLoopExit                   
+//	0x26	                        add     r1, r0, r0          		// from 0 to r7         
+//	0x27	BubbleInLoop:           beq     r1, r7, BubbleInLoopExit   	// r1 for source address                               
+//	0x28	                        lw      r3, r1, 0x0000             	// r3 for temp value 1, r3=MEM[r1]                     
+//	0x29	                        lw      r4, r1, 0x0004		       	// r4 for temp value 2, r4=MEM[r1+4]  
+//	0x2A	                        slt     r5, r3, r4                 	// r5 for flag: r4 < r3 ? 32'd1: 32'd0
+//	0x2B	                        beq     r5, r0, SwapExit           	// r7 for finished bound              
+//	0x2C	Swap:                   sw      r4, r1, 0x0000
+//	0x2D	                        sw      r3, r1, 0x0004
+//	0x2E	SwapExit:               add     r1, r1, 0x0004
+//	0x2F	                        j       BubbleInLoop
+//	0x30	BubbleInLoopExit:       sub     r7, r7, 0x0004
+//	0x31	                        j       BubbleOutLoop
+//	0x32	BubbleOutLoopExit:      add     r1, r0, r0
+//	0x33	                        addi    r7, r0, 0x0040                                        ( modify3 for r7 = 4*number = 64 )
+//	0x34	OutputSortedSeries:     beq     r1, r7, BubbleSortExit
+//	0x35	                        lw      r30,r1, 0x0000
+//	0x36	                        addi    r1, r1, 0x0004
+//	0x37	                        jal     OutputTestPort
+//	0x38	                        j       OutputSortedSeries      
+//	0x39	BubbleSortExit:         jr      r29
+//	0x3A	Trap:                   j		Trap
+//	0x3B	                        nop
