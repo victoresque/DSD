@@ -1,0 +1,71 @@
+1. RTL simulation
+use this command to run simulation
+-------------------------------------------------------------------------------
+> ncverilog +access+r DSDHW3_tb.v DSDHW3.v HSs18n_128x32.v
+-------------------------------------------------------------------------------
+check the waveform file "SingleCycleRTL.vcd" for debugging!
+
+
+
+
+2. Synthesis
+preparation:
+a. source /usr/cad/synopsys/CIC/synthesis.cshrc
+b. the file ".synopsys_dc.setup" should be at the place you invoke design vision
+invoke the design vision: type the command "dv &"
+then follow the slides to complete the synthesis process!
+
+the following commands are suggested by TA, and can be modified as you like
+if you want to follow these all commands,
+you may only need command-line interface of design vision.
+to invoke design vision in command-line-only mode, try
+-------------------------------------------------------------------------------
+> dv -no_gui
+-------------------------------------------------------------------------------
+and then you would see a prompt like "design_vision>"
+at this moment you can try the whole commands one after one!
+
+[suggested synthesis script]  // iodelay should be (0.5*cycle)+1
+-------------------------------------------------------------------------------
+read_verilog DSDHW3.v
+set cycle 4
+set iodelay 3
+create_clock -name CLK -period $cycle [get_ports clk]
+set_dont_touch_network      [get_clocks CLK]
+set_fix_hold                [get_clocks CLK]
+set_input_delay  -clock CLK -max $iodelay [get_ports ReadDataMem]
+set_output_delay -clock CLK -max $iodelay [get_ports CEN]
+set_output_delay -clock CLK -max $iodelay [get_ports WEN]
+set_output_delay -clock CLK -max $iodelay [get_ports OEN]
+set_output_delay -clock CLK -max $iodelay [get_ports A]
+set_output_delay -clock CLK -max $iodelay [get_ports ReadData2]
+set_operating_conditions -min_library fast -min fast -max_library slow -max slow
+compile
+write_sdf -version 2.1 DSDHW3.sdf
+write -format verilog -hier -output DSDHW3.vg
+write -format ddc     -hier -output DSDHW3.ddc
+-------------------------------------------------------------------------------
+
+
+
+
+3. Gate-level simulation
+after synthesis, you should have:
+a. DSDHW3.vg  - gate-level netlist in verilog format
+b. DSDHW3.sdf - description of timing delay of all gates
+in order to link all gates in DSDHW3.vg to the cell library,
+you shouls copy "tsmc13.v" to your working directory.
+try:
+-------------------------------------------------------------------------------
+> cp /home/raid7_2/course/cvsd/CBDK_IC_Contest/CIC/Verilog/tsmc13.v .
+-------------------------------------------------------------------------------
+    NOTE: THIS FILE IS NOT ALLOWED TO BE DOWNLOAD! 
+    OR YOU MAY OFFEND THE COPYRIGHT PROTECTED BY NTU & CIC!
+
+now, you have to check these are 5 files in the working directory,
+DSDHW3.vg, DSDHW3.sdf, DSDHW3_tb_gate.v, HSs18n_128x32.v, and tsmc13.v.
+then, try this command to run gate-level simulation
+-------------------------------------------------------------------------------
+> ncverilog +access+r DSDHW3_tb_gate.v DSDHW3.vg HSs18n_128x32.v tsmc13.v
+-------------------------------------------------------------------------------
+check the waveform file "SingleCycleGate.vcd" for debugging!
