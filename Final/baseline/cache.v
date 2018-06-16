@@ -5,10 +5,6 @@
         32 words (8 blocks x 4 words) cache
         Placement:              direct mapped 
         Write policy:           write back + write buffer
-    Note:
-        The outputs `proc_rdata` and `proc_stall` are not gated by registers,
-        this may cause some timing issues, so be sure to check it. However, since pipelined 
-        MIPS has registers right after IMEM and DMEM, this shouldn't cause any problem.
 */
 
 module cache(
@@ -116,12 +112,9 @@ module cache(
     assign buf_wdata = buf_wdata_w;
 
     always @ (*) begin
-        for (i=0; i<8; i=i+1) block_next[i] = block[i];
-
         proc_tag = proc_addr[29:5];
         proc_index = proc_addr[4:2];
         proc_offset = proc_addr[1:0];
-
         proc_block = block[proc_index];
         proc_block_valid = proc_block[154];
         proc_block_dirty = proc_block[153];
@@ -130,41 +123,46 @@ module cache(
         hit = proc_tag == proc_block_tag;
 
         case (proc_offset)
-            2'd0: proc_block_word = proc_block_data[31:0];
-            2'd1: proc_block_word = proc_block_data[63:32];
-            2'd2: proc_block_word = proc_block_data[95:64];
-            2'd3: proc_block_word = proc_block_data[127:96];
+            2'd0: begin
+                proc_block_word = proc_block_data[31:0];
+                proc_new_data = {proc_block_data[127:32], proc_wdata};
+                buf_rdata_word = buf_rdata[31:0];
+                proc_replace_data = {buf_rdata[127:32], proc_wdata};
+            end
+            2'd1: begin
+                proc_block_word = proc_block_data[63:32];
+                proc_new_data = {proc_block_data[127:64], proc_wdata, proc_block_data[31:0]};
+                buf_rdata_word = buf_rdata[63:32];
+                proc_replace_data = {buf_rdata[127:64], proc_wdata, buf_rdata[31:0]};
+            end
+            2'd2: begin
+                proc_block_word = proc_block_data[95:64];
+                proc_new_data = {proc_block_data[127:96], proc_wdata, proc_block_data[63:0]};
+                buf_rdata_word = buf_rdata[95:64];
+                proc_replace_data = {buf_rdata[127:96], proc_wdata, buf_rdata[63:0]};
+            end
+            2'd3: begin
+                proc_block_word = proc_block_data[127:96];
+                proc_new_data = {proc_wdata, proc_block_data[95:0]};
+                buf_rdata_word = buf_rdata[127:96];
+                proc_replace_data = {proc_wdata, buf_rdata[95:0]};
+            end
         endcase
-        case (proc_offset)
-            2'd0: proc_new_data = {proc_block_data[127:32], proc_wdata};
-            2'd1: proc_new_data = {proc_block_data[127:64], proc_wdata, proc_block_data[31:0]};
-            2'd2: proc_new_data = {proc_block_data[127:96], proc_wdata, proc_block_data[63:0]};
-            2'd3: proc_new_data = {proc_wdata, proc_block_data[95:0]};
-        endcase
-        case (proc_offset)
-            2'd0: buf_rdata_word = buf_rdata[31:0];
-            2'd1: buf_rdata_word = buf_rdata[63:32];
-            2'd2: buf_rdata_word = buf_rdata[95:64];
-            2'd3: buf_rdata_word = buf_rdata[127:96];
-        endcase
-        case (proc_offset)
-            2'd0: proc_replace_data = {buf_rdata[127:32], proc_wdata};
-            2'd1: proc_replace_data = {buf_rdata[127:64], proc_wdata, buf_rdata[31:0]};
-            2'd2: proc_replace_data = {buf_rdata[127:96], proc_wdata, buf_rdata[63:0]};
-            2'd3: proc_replace_data = {proc_wdata, buf_rdata[95:0]};
-        endcase
+    end
 
+    always @ (*) begin
+        for (i=0; i<8; i=i+1) block_next[i] = block[i];
         proc_stall_w = proc_stall_r;
         proc_rdata_w = proc_rdata_r;
-        buf_addr_w = buf_addr_r;
+        buf_addr_w = proc_addr[29:2];
         buf_wdata_w = buf_wdata_r;
         buf_write_request_w = buf_write_request_r;
         state_next = state;
-
         buf_read = 1'b0;
         buf_write = 1'b0;
 
-        if (state == S_IDLE) begin
+        case (state)
+        S_IDLE: begin
             if (proc_read) begin
                 proc_stall_w = 1'b1;
                 if (proc_block_valid) begin
@@ -181,7 +179,6 @@ module cache(
                             buf_read = 1'b1;
                             buf_write = 1'b0;
                             buf_wdata_w = proc_block_data;
-                            buf_addr_w = proc_addr[29:2];
                             proc_stall_w = 1'b1;
                             state_next = S_READ_WRITE;
                         end
@@ -192,7 +189,6 @@ module cache(
                         if (~buf_stall) begin
                             buf_read = 1'b1;
                             buf_write = 1'b0;
-                            buf_addr_w = proc_addr[29:2];
                             proc_stall_w = 1'b1;
                             state_next = S_MEM_READ;
                         end
@@ -204,7 +200,6 @@ module cache(
                     if (~buf_stall) begin
                         buf_read = 1'b1;
                         buf_write = 1'b0;
-                        buf_addr_w = proc_addr[29:2];
                         proc_stall_w = 1'b1;
                         state_next = S_MEM_READ;
                     end
@@ -225,7 +220,6 @@ module cache(
                         buf_wdata_w = proc_block_data;
                         buf_read = 1'b1;
                         buf_write = 1'b0;
-                        buf_addr_w = proc_addr[29:2];
                         buf_write_request_w = 1'b1;
                         proc_stall_w = 1'b1;
                         state_next = S_MEM_READ_REPLACE;
@@ -238,14 +232,13 @@ module cache(
                     if (~buf_stall) begin
                         buf_read = 1'b1;
                         buf_write = 1'b0;
-                        buf_addr_w = proc_addr[29:2];
                         proc_stall_w = 1'b1;
                         state_next = S_MEM_READ_REPLACE;
                     end
                 end
             end
         end
-        else if (state == S_MEM_READ) begin
+        S_MEM_READ: begin
             if (~buf_stall) begin
                 buf_read = 1'b0;
                 buf_write = 1'b0;
@@ -255,7 +248,7 @@ module cache(
                 state_next = S_IDLE;
             end
         end
-        else if (state == S_MEM_READ_REPLACE) begin
+        S_MEM_READ_REPLACE: begin
             if (~buf_stall) begin
                 if (~buf_write_request_r) begin
                     buf_read = 1'b0;
@@ -272,7 +265,7 @@ module cache(
                 state_next = S_IDLE;
             end
         end
-        else if (state == S_READ_WRITE) begin
+        S_READ_WRITE: begin
             if (~buf_stall) begin
                 buf_read = 1'b0;
                 buf_write = 1'b1;
@@ -283,6 +276,7 @@ module cache(
                 state_next = S_IDLE;
             end
         end
+        endcase
     end
 
 //==== sequential circuit =================================
@@ -358,10 +352,10 @@ module buffer(
 //==== combinational circuit ==============================
     assign buf_stall = buf_stall_r;
     assign buf_rdata = buf_rdata_r;
-    assign mem_addr = mem_addr_w;
-    assign mem_read = mem_read_w;
-    assign mem_write = mem_write_w;
-    assign mem_wdata = mem_wdata_w;
+    assign mem_addr = mem_addr_r;
+    assign mem_read = mem_read_r;
+    assign mem_write = mem_write_r;
+    assign mem_wdata = mem_wdata_r;
 
     always @ (*) begin
         buf_rdata_w = buf_rdata_r;
@@ -372,7 +366,8 @@ module buffer(
         mem_wdata_w = mem_wdata_r;
         state_next = state;
 
-        if (state == S_IDLE) begin
+        case (state)
+        S_IDLE: begin
             if (buf_write) begin
                 buf_stall_w = 1'b1;
                 mem_write_w = 1'b1;
@@ -387,14 +382,14 @@ module buffer(
                 state_next = S_READ;
             end
         end
-        else if (state == S_WRITE) begin
+        S_WRITE: begin
             if (mem_ready) begin
                 buf_stall_w = 1'b0;
                 mem_write_w = 1'b0;
                 state_next = S_IDLE;
             end
         end
-        else if (state == S_READ) begin
+        S_READ: begin
             if (mem_ready) begin
                 buf_stall_w = 1'b0;
                 buf_rdata_w = mem_rdata;
@@ -402,6 +397,7 @@ module buffer(
                 state_next = S_IDLE;
             end
         end
+        endcase
     end
 
 //==== sequential circuit =================================

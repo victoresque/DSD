@@ -42,7 +42,9 @@
       1. no cache
       2. L1
       3. L1+L2
+    * cycles under different size of L1/L2 cache size
     * area comparison under same clock speed constraint
+    * hit/miss rate comparison
 
 ## Branch Prediction
   * Design
@@ -51,7 +53,6 @@
   * **Experiments**
     * total clock cycles comparison under different configurations of tb_BrPred
     * area comparison under same clock speed constraint
-    * hit/miss rate comparison
 
 ## Multiplier/Divider
   * Design
