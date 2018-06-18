@@ -1,7 +1,16 @@
+read_verilog ALU.v
+read_verilog cache.v
+read_verilog cache_readonly.v
+read_verilog control_unit.v
+read_verilog MIPS_stages.v
+read_verilog MIPS_Pipeline.v
+read_verilog register_file.v
+read_verilog CHIP.v
+
 #You may modified the clock constraints 
 #or add more constraints for your design
 ####################################################
-set cycle  10        
+set cycle 3.1
 ####################################################
 
 
@@ -36,12 +45,3 @@ write_sdf -version 2.1 CHIP_syn.sdf
 write -format verilog -hier -output CHIP_syn.v
 write -format ddc     -hier -output CHIP_syn.ddc  
 #####################################################  
-
-
-
-
-
-
-
-
-
