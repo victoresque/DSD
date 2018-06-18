@@ -5,9 +5,9 @@
 
 import sys
 
-nb_notBEQ   = sys.argv[1]
-nb_interBEQ = sys.argv[2]
-nb_BEQ      = sys.argv[3]
+nb_notBEQ   = int(sys.argv[1])
+nb_interBEQ = int(sys.argv[2])
+nb_BEQ      = int(sys.argv[3])
 # nb_notBEQ   = 1
 # nb_interBEQ = 2
 # nb_BEQ      = 3
