@@ -16,7 +16,7 @@
       * ICACHE_stall: ICACHE may stall when fetching instructions
     * Function (with order)
       1. if DCACHE_stall, stall IF/ID/EX
-      2. if load_word_stall, stall IF/ID/EX, flush ID
+      2. if load_word_stall, stall IF/ID, flush ID
       3. if ICACHE_stall, flush IF
   * Forwarding
     * since we handle BEQ in ID stage, we need to forward values to ID instead of EX
