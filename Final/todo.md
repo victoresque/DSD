@@ -11,6 +11,4 @@
 
 
 * Note
-  * cycle 3.6, compile_ultra, tb 3.8
-  * cycle 2.9, compile_ultra -retime, tb 3.6
-  * cycle 3.7, compile, tb 4.4
+  * cycle 4, compile, optimize_netlist -area, tb 4.54, area 286000, 9727ns

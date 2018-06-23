@@ -149,17 +149,17 @@ module ALU(
             end
         end
         else if (state == S_MULT) begin
+            mult_start_next = 1'b0;
             if (mult_done) begin
-                stall_w = 1'b0;
-                mult_start_next = 1'b0;
+                stall_w = 1'b0;                
                 {HI_next, LO_next} = mult_prod;
                 state_next = S_NORMAL;
             end
         end
         else if (state == S_DIV) begin
+            div_start_next = 1'b0;
             if (div_done) begin
                 stall_w = 1'b0;
-                div_start_next = 1'b0;
                 {HI_next, LO_next} = {div_rem, div_quo};
                 state_next = S_NORMAL;
             end
@@ -224,18 +224,31 @@ module Multiplier (
     always @ (*) begin
         state_next = state;
         done_next = 1'b0;
+        product_next = product;
         if (state == S_IDLE) begin
             counter_next = 6'd0;
             if (start) begin
+                product_next = {32'b0, multiplier};
                 state_next = S_CALC;
             end
         end
         else begin
             counter_next = counter + 1;
-            if (counter == 6'd16) begin
+            if (counter == 6'd32) begin
                 done_next = 1'b1;
-                product_next = multiplicand * multiplier;
+                product_next = product;
                 state_next = S_IDLE;
+            end
+            else begin
+                if (product[0]) begin
+                    if (counter != 6'd31) product_next = {product[63:32] + multiplicand, product[31:0]} >> 1;
+                    else product_next = {product[63:32] - multiplicand, product[31:0]} >> 1;
+                    product_next[63] = product_next[62];
+                end
+                else begin
+                    product_next = product >> 1'b1;
+                    product_next[63] = product_next[62];
+                end
             end
         end
     end
@@ -278,29 +291,47 @@ module Divider (
     output [31:0] remainder;
 
     reg   [1:0] state, state_next;
+    parameter S_IDLE = 2'd0;
+    parameter S_CALC = 2'd1;
+
     reg   [5:0] counter, counter_next;
     reg         done, done_next;
     reg  [31:0] quotient, quotient_next;
     reg  [31:0] remainder, remainder_next;
-    parameter S_IDLE = 2'd0;
-    parameter S_CALC = 2'd1;
+    reg  [63:0] data, data_next;
+    reg  [31:0] diff;
+    wire [31:0] dividend_sign, divisor_sign;
+    wire        dividend_neg, divisor_neg;
+
+    assign dividend_neg = dividend[31];
+    assign divisor_neg = divisor[31];
+    assign dividend_sign = dividend_neg ? (~dividend + 1'b1) : dividend;
+    assign divisor_sign = divisor_neg ? (~divisor + 1'b1) : divisor;
 
     always @ (*) begin
         state_next = state;
         done_next = 1'b0;
+        data_next = data;
+        remainder_next = (dividend_neg) ? (~data[63:32] + 1'b1) : data[63:32];
+        quotient_next = (dividend_neg!=divisor_neg) ? (~data[31:0] + 1'b1) : data[31:0];
         if (state == S_IDLE) begin
             counter_next = 6'd0;
             if (start) begin
+                data_next = {32'b0, dividend_sign};
                 state_next = S_CALC;
             end
         end
         else begin
             counter_next = counter + 1;
-            if (counter == 6'd16) begin
+            if (counter == 6'd32) begin
+                data_next = data;
                 done_next = 1'b1;
-                quotient_next = dividend / divisor;
-                remainder_next = dividend % divisor;
                 state_next = S_IDLE;
+            end
+            else begin
+                data_next = data << 1;
+                diff = data_next[63:32] - divisor_sign;
+                if (~diff[31]) data_next = {diff, data[30:0], 1'b1};
             end
         end
     end
@@ -311,6 +342,7 @@ module Divider (
             counter <= 6'b0;
             quotient <= 32'b0;
             remainder <= 32'b0;
+            data <= 64'b0;
             state <= S_IDLE;
         end
         else begin
@@ -318,6 +350,7 @@ module Divider (
             counter <= counter_next;
             quotient <= quotient_next;
             remainder <= remainder_next;
+            data <= data_next;
             state <= state_next;
         end
     end

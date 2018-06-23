@@ -42,8 +42,8 @@ module MIPS_IF (
     assign I_write = 1'b0;
     assign I_wdata = 32'b0;
     assign IF_stall = I_stall;
-    assign I_read = 1'b1;
     assign ID_pc = pc;
+    assign I_read = 1'b1;
     assign pc_4 = pc + 4;
 
     always @ (*) begin
@@ -167,7 +167,7 @@ module MIPS_ID (
 );
     input         clk;
     input         rst_n;
-    input  [31:0] ctrl;
+    input  [15:0] ctrl;
     input         stall;
     input         bubble;
     input  [31:0] pc;
@@ -179,7 +179,7 @@ module MIPS_ID (
     input  [31:0] ForwardData_EX;
     input  [31:0] ForwardData_MEM;
     input  [31:0] ForwardData_WB;
-    output [31:0] EX_ctrl;
+    output [12:0] EX_ctrl;
     output [31:0] EX_busX;
     output [31:0] EX_busY;
     output [31:0] EX_inst;
@@ -196,14 +196,14 @@ module MIPS_ID (
     wire [31:0] busX;
     wire [31:0] busY;
     wire        reg_equal;
-    reg  [31:0] EX_ctrl, EX_ctrl_next;
+    reg  [12:0] EX_ctrl, EX_ctrl_next;
     reg  [31:0] EX_busX, EX_busX_next;
     reg  [31:0] EX_busY, EX_busY_next;
     reg  [31:0] EX_inst, EX_inst_next;
     reg  [31:0] ForwardDataX, ForwardDataY;
     wire [31:0] branch_addr;
     wire [31:0] jump_addr;
-    wire        Jump, JumpReg, Branch, LinkRA, LinkRD, MFHI, MFLO;
+    wire        Jump, JumpReg, Branch, LinkRA, LinkRD;
     wire        Link;
 
     assign Jump = ctrl[15];
@@ -211,8 +211,6 @@ module MIPS_ID (
     assign Branch = ctrl[13];
     assign LinkRA = ctrl[6];
     assign LinkRD = ctrl[5];
-    assign MFHI = ctrl[17];
-    assign MFLO = ctrl[16];
     assign Link = LinkRA | LinkRD;
 
     assign opcode = inst[31:26];
@@ -221,9 +219,9 @@ module MIPS_ID (
     assign rd = inst[15:11];
     assign addr = inst[25:0];
     assign sign_ext = {{16{inst[15]}}, inst[15:0]};
-    assign reg_equal = EX_busX_next == EX_busY_next;
+    assign reg_equal = ForwardDataX==ForwardDataY;
     assign branch_addr = pc + (sign_ext << 2);
-    assign jump_addr = JumpReg ? (EX_busX_next << 2) : (addr << 2);
+    assign jump_addr = JumpReg ? (ForwardDataX << 2) : (addr << 2);
     assign IF_BranchOrJump = Jump | (Branch & reg_equal);
     assign IF_branch_jump_addr = (Branch & reg_equal) ? branch_addr : jump_addr;
 
@@ -258,14 +256,14 @@ module MIPS_ID (
         if (~stall) begin
             EX_busX_next = Link ? pc >> 2 : ForwardDataX;
             EX_busY_next = Link ? 32'b0 : ForwardDataY;
-            EX_ctrl_next = ctrl;
+            EX_ctrl_next = ctrl[12:0];
             EX_inst_next = inst;
         end
         else begin
             EX_busX_next = EX_busX;
             EX_busY_next = EX_busY;
             EX_inst_next = EX_inst;
-            EX_ctrl_next = bubble ? 32'b0 : EX_ctrl;
+            EX_ctrl_next = bubble ? 13'b0 : EX_ctrl;
         end
     end
 
@@ -273,7 +271,7 @@ module MIPS_ID (
         if (~rst_n) begin
             EX_busX <= 32'b0;
             EX_busY <= 32'b0;
-            EX_ctrl <= 32'b0;
+            EX_ctrl <= 13'b0;
             EX_inst <= 32'b0;
         end
         else begin
@@ -298,39 +296,36 @@ module MIPS_EX (
     MEM_alu_out,
     MEM_wdata,
     MEM_RW,
-    EX_stall,
     ForwardRW,
     ForwardData
 );
     input         clk;
     input         rst_n;
-    input  [31:0] ctrl;
+    input  [12:0] ctrl;
     input         stall;
     input  [31:0] busX;
     input  [31:0] busY;
     input  [31:0] inst;
-    output [31:0] MEM_ctrl;
+    output  [3:0] MEM_ctrl;
     output [31:0] MEM_alu_out;
     output [31:0] MEM_wdata;
     output  [4:0] MEM_RW;
-    output        EX_stall;
     output  [4:0] ForwardRW;
     output [31:0] ForwardData;
 
     wire [31:0] alu_A;
     wire [31:0] alu_B;
-    wire [31:0] alu_HI, alu_LO;
-    wire [31:0] alu_out, alu_out_hilo;
+    wire [31:0] alu_out;
     wire  [5:0] funct;
     wire [31:0] shamt;
     wire [31:0] sign_ext;
     wire  [4:0] RW;
-    reg  [31:0] MEM_ctrl, MEM_ctrl_next;
+    reg   [3:0] MEM_ctrl, MEM_ctrl_next;
     reg  [31:0] MEM_alu_out, MEM_alu_out_next;
     reg  [31:0] MEM_wdata, MEM_wdata_next;
     reg   [4:0] MEM_RW, MEM_RW_next;
     wire  [3:0] ALUOp;
-    wire        ALUSrcAShamt, ALUSrcBImm, RegDstRD, LinkRA, LinkRD, MFHI, MFLO;
+    wire        ALUSrcAShamt, ALUSrcBImm, RegDstRD, LinkRA, LinkRD;
 
     assign ALUOp = ctrl[12:9];
     assign ALUSrcAShamt = ctrl[8];
@@ -338,8 +333,6 @@ module MIPS_EX (
     assign RegDstRD = ctrl[4];
     assign LinkRA = ctrl[6];
     assign LinkRD = ctrl[5];
-    assign MFHI = ctrl[17];
-    assign MFLO = ctrl[16];
 
     assign funct = inst[5:0];
     assign shamt = {27'b0, inst[10:6]};
@@ -347,47 +340,35 @@ module MIPS_EX (
     assign alu_A = ALUSrcAShamt ? shamt : busX;
     assign alu_B = ALUSrcBImm ? sign_ext : busY;
     assign RW = (RegDstRD | LinkRD) ? inst[15:11] : LinkRA ? 5'd31 : inst[20:16];
-    assign alu_out_hilo = MFHI ? alu_HI : MFLO ? alu_LO : alu_out;
 
     assign ForwardRW = RW;
-    assign ForwardData = alu_out_hilo;
+    assign ForwardData = alu_out;
 
     ALU ALU_inst (
-        .clk(clk),
-        .rst_n(rst_n),
         .op(ALUOp),
         .A(alu_A),
         .B(alu_B),
-        .HI(alu_HI),
-        .LO(alu_LO),
-        .out(alu_out),
-        .stall(EX_stall)
+        .out(alu_out)
     );
 
     always @ (*) begin
-        if (stall) begin
+        if (~stall) begin
+            MEM_ctrl_next = ctrl[3:0];
+            MEM_alu_out_next = alu_out;
+            MEM_wdata_next = busY;
+            MEM_RW_next = RW;
+        end
+        else begin
             MEM_ctrl_next = MEM_ctrl;
             MEM_alu_out_next = MEM_alu_out;
             MEM_wdata_next = MEM_wdata;
             MEM_RW_next = MEM_RW;
         end
-        else if (EX_stall) begin
-            MEM_ctrl_next = 32'b0;
-            MEM_alu_out_next = 32'b0;
-            MEM_wdata_next = 32'b0;
-            MEM_RW_next = 32'b0;
-        end
-        else begin
-            MEM_ctrl_next = ctrl;
-            MEM_alu_out_next = alu_out_hilo;
-            MEM_wdata_next = busY;
-            MEM_RW_next = RW;
-        end
     end
 
     always @ (posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            MEM_ctrl <= 32'b0;
+            MEM_ctrl <= 4'b0;
             MEM_alu_out <= 32'b0;
             MEM_wdata <= 32'b0;
             MEM_RW <= 5'b0;
@@ -425,7 +406,7 @@ module MIPS_MEM (
 );
     input         clk;
     input         rst_n;
-    input  [31:0] ctrl;
+    input   [3:0] ctrl;
     input         stall;
     input  [31:0] alu_out;
     input  [31:0] wdata;
@@ -437,13 +418,13 @@ module MIPS_MEM (
     input         D_stall;
     input  [31:0] D_rdata;
     output        MEM_stall;
-    output [31:0] WB_ctrl;
+    output  [1:0] WB_ctrl;
     output [31:0] WB_mem_data;
     output [31:0] WB_reg_data;
     output  [4:0] WB_RW;
     output [31:0] ForwardData;
 
-    reg  [31:0] WB_ctrl, WB_ctrl_next;
+    reg   [1:0] WB_ctrl, WB_ctrl_next;
     reg  [31:0] WB_mem_data, WB_mem_data_next;
     reg  [31:0] WB_reg_data, WB_reg_data_next;
     reg   [4:0] WB_RW, WB_RW_next;
@@ -466,12 +447,12 @@ module MIPS_MEM (
         WB_reg_data_next = alu_out;
         WB_mem_data_next = D_rdata;
         WB_RW_next = RW;
-        WB_ctrl_next = MEM_stall ? 32'b0 : ctrl;
+        WB_ctrl_next = MEM_stall ? 2'b0 : ctrl[1:0];
     end
 
     always @ (posedge clk or negedge rst_n) begin
         if (~rst_n) begin
-            WB_ctrl <= 32'b0;
+            WB_ctrl <= 2'b0;
             WB_mem_data <= 32'b0;
             WB_reg_data <= 32'b0;
             WB_RW <= 32'b0;
@@ -500,7 +481,7 @@ module MIPS_WB (
 );
     input         clk;
     input         rst_n;
-    input  [31:0] ctrl;
+    input   [1:0] ctrl;
     input         stall;
     input  [31:0] mem_data;
     input  [31:0] reg_data;

@@ -39,21 +39,21 @@ module MIPS_Pipeline (
 //======== reg/wire ===========================================
     wire        IF_BranchOrJump;
     wire [31:0] IF_branch_jump_addr;
-    wire [31:0] ID_ctrl;
+    wire [15:0] ID_ctrl;
     wire [31:0] ID_pc;
     wire [31:0] ID_inst;
     wire        ID_RegWrite;
     wire  [4:0] ID_RW;
     wire [31:0] ID_busW;
-    wire [31:0] EX_ctrl;
+    wire [12:0] EX_ctrl;
     wire [31:0] EX_busX;
     wire [31:0] EX_busY;
     wire [31:0] EX_inst;
-    wire [31:0] MEM_ctrl;
+    wire  [3:0] MEM_ctrl;
     wire [31:0] MEM_alu_out;
     wire [31:0] MEM_wdata;
     wire  [4:0] MEM_RW;
-    wire [31:0] WB_ctrl;
+    wire  [1:0] WB_ctrl;
     wire [31:0] WB_mem_data;
     wire [31:0] WB_reg_data;
     wire  [4:0] WB_RW;
@@ -64,7 +64,6 @@ module MIPS_Pipeline (
     wire [31:0] ForwardData_WB;
     wire  [4:0] ForwardRW_EX;
     wire        stall_icache;
-    wire        stall_alu;
     wire        stall_dcache;
     wire        stall_load_word;
     wire        stall_IF;
@@ -75,7 +74,6 @@ module MIPS_Pipeline (
     wire        bubble_ID;
 
 //======== Assignments ========================================
-    assign ID_ctrl[31:18] = 14'b0;
 
 //======== Instances ==========================================
     control_unit control_unit_inst (
@@ -89,8 +87,6 @@ module MIPS_Pipeline (
         .ALUSrcBImm(ID_ctrl[7]),
         .LinkRA(ID_ctrl[6]),
         .LinkRD(ID_ctrl[5]),
-        .MFHI(ID_ctrl[17]),
-        .MFLO(ID_ctrl[16]),
         .RegDstRD(ID_ctrl[4]),
         .MemWrite(ID_ctrl[3]),
         .MemRead(ID_ctrl[2]),
@@ -119,7 +115,6 @@ module MIPS_Pipeline (
     stall_aggregator stall_aggregator_inst (
         .stall_dcache(stall_dcache),
         .stall_icache(stall_icache),
-        .stall_alu(stall_alu),
         .stall_load_word(stall_load_word),
         .stall_IF(stall_IF),
         .stall_ID(stall_ID),
@@ -179,7 +174,6 @@ module MIPS_Pipeline (
         .MEM_alu_out(MEM_alu_out),
         .MEM_wdata(MEM_wdata),
         .MEM_RW(MEM_RW),
-        .EX_stall(stall_alu),
         .ForwardRW(ForwardRW_EX),
         .ForwardData(ForwardData_EX)
     );
@@ -287,25 +281,21 @@ endmodule
 module stall_aggregator (
     stall_dcache,
     stall_icache,
-    stall_alu,
     stall_load_word,
     stall_IF,
     stall_ID,
     bubble_ID,
     stall_EX,
-    bubble_EX,
     stall_MEM,
     stall_WB
 );
     input  stall_dcache;
     input  stall_icache;
-    input  stall_alu;
     input  stall_load_word;
     output stall_IF;
     output stall_ID;
     output bubble_ID;
     output stall_EX;
-    output bubble_EX;
     output stall_MEM;
     output stall_WB;
 
@@ -313,7 +303,6 @@ module stall_aggregator (
     reg  stall_ID;
     reg  bubble_ID;
     reg  stall_EX;
-    reg  bubble_EX;
 
     assign stall_MEM = 1'b0;
     assign stall_WB = 1'b0;
@@ -324,28 +313,18 @@ module stall_aggregator (
             stall_ID = 1'b1;
             bubble_ID = 1'b0;
             stall_EX = 1'b1;
-            bubble_EX = 1'b0;
         end
         else if (stall_load_word) begin
             stall_IF = 1'b1;
             stall_ID = 1'b1;
             bubble_ID = 1'b1;
             stall_EX = 1'b0;
-            bubble_EX = 1'b0;
-        end
-        else if (stall_alu) begin
-            stall_IF = 1'b1;
-            stall_ID = 1'b1;
-            bubble_ID = 1'b0;
-            stall_EX = 1'b1;
-            bubble_EX = 1'b1;
         end
         else begin
             stall_IF = 1'b0;
             stall_ID = 1'b0;
             bubble_ID = 1'b0;
             stall_EX = 1'b0;
-            bubble_EX = 1'b0;
         end
     end
 endmodule

@@ -39,34 +39,34 @@ module MIPS_Pipeline (
 //======== reg/wire ===========================================
     wire        IF_BranchOrJump;
     wire [31:0] IF_branch_jump_addr;
-    wire [31:0] ID_ctrl;
+    wire [15:0] ID_ctrl;
     wire [31:0] ID_pc;
     wire [31:0] ID_inst;
     wire        ID_RegWrite;
     wire  [4:0] ID_RW;
     wire [31:0] ID_busW;
-    wire [31:0] EX_ctrl;
+    wire [12:0] EX_ctrl;
     wire [31:0] EX_busX;
     wire [31:0] EX_busY;
     wire [31:0] EX_inst;
-    wire [31:0] MEM_ctrl;
+    wire  [3:0] MEM_ctrl;
     wire [31:0] MEM_alu_out;
     wire [31:0] MEM_wdata;
     wire  [4:0] MEM_RW;
-    wire [31:0] WB_ctrl;
+    wire  [1:0] WB_ctrl;
     wire [31:0] WB_mem_data;
     wire [31:0] WB_reg_data;
     wire  [4:0] WB_RW;
     wire  [1:0] ForwardX;
     wire  [1:0] ForwardY;
-    wire [31:0] ForwardData_EX;
-    wire [31:0] ForwardData_MEM;
-    wire [31:0] ForwardData_WB;
+    wire [31:0] ForwardData_EX, FD_EX;
+    wire [31:0] ForwardData_MEM, FD_MEM;
+    wire [31:0] ForwardData_WB, FD_WB;
     wire  [4:0] ForwardRW_EX;
     wire        stall_icache;
-    wire        stall_alu;
     wire        stall_dcache;
     wire        stall_load_word;
+    wire        stall_forward;
     wire        stall_IF;
     wire        stall_ID;
     wire        stall_EX;
@@ -75,7 +75,6 @@ module MIPS_Pipeline (
     wire        bubble_ID;
 
 //======== Assignments ========================================
-    assign ID_ctrl[31:18] = 14'b0;
 
 //======== Instances ==========================================
     control_unit control_unit_inst (
@@ -89,8 +88,6 @@ module MIPS_Pipeline (
         .ALUSrcBImm(ID_ctrl[7]),
         .LinkRA(ID_ctrl[6]),
         .LinkRD(ID_ctrl[5]),
-        .MFHI(ID_ctrl[17]),
-        .MFLO(ID_ctrl[16]),
         .RegDstRD(ID_ctrl[4]),
         .MemWrite(ID_ctrl[3]),
         .MemRead(ID_ctrl[2]),
@@ -98,6 +95,8 @@ module MIPS_Pipeline (
         .RegWrite(ID_ctrl[0])
     );
     forwarding_unit forwarding_unit_inst (
+        .clk(clk),
+        .rst_n(rst_n),
         .EX_RegWrite(EX_ctrl[0]),
         .EX_RW(ForwardRW_EX),
         .MEM_RegWrite(MEM_ctrl[0]),
@@ -107,7 +106,16 @@ module MIPS_Pipeline (
         .ID_RX(ID_inst[25:21]),
         .ID_RY(ID_inst[20:16]),
         .ForwardX(ForwardX),
-        .ForwardY(ForwardY)
+        .ForwardY(ForwardY),
+        .ForwardData_EX(ForwardData_EX),
+        .ForwardData_MEM(ForwardData_MEM),
+        .ForwardData_WB(ID_busW),
+        .FD_EX(FD_EX),
+        .FD_MEM(FD_MEM),
+        .FD_WB(FD_WB),
+        .stall_dcache(stall_dcache),
+        .stall_load_word(stall_load_word),
+        .stall_forward(stall_forward)
     );
     hazard_unit hazard_unit_inst (
         .EX_MemRead(EX_ctrl[2]),
@@ -119,8 +127,8 @@ module MIPS_Pipeline (
     stall_aggregator stall_aggregator_inst (
         .stall_dcache(stall_dcache),
         .stall_icache(stall_icache),
-        .stall_alu(stall_alu),
         .stall_load_word(stall_load_word),
+        .stall_forward(stall_forward),
         .stall_IF(stall_IF),
         .stall_ID(stall_ID),
         .bubble_ID(bubble_ID),
@@ -156,9 +164,9 @@ module MIPS_Pipeline (
         .IF_branch_jump_addr(IF_branch_jump_addr),
         .ForwardX(ForwardX),
         .ForwardY(ForwardY),
-        .ForwardData_EX(ForwardData_EX),
-        .ForwardData_MEM(ForwardData_MEM),
-        .ForwardData_WB(ID_busW),
+        .ForwardData_EX(FD_EX),
+        .ForwardData_MEM(FD_MEM),
+        .ForwardData_WB(FD_WB),
         .EX_ctrl(EX_ctrl),
         .EX_busX(EX_busX),
         .EX_busY(EX_busY),
@@ -179,7 +187,6 @@ module MIPS_Pipeline (
         .MEM_alu_out(MEM_alu_out),
         .MEM_wdata(MEM_wdata),
         .MEM_RW(MEM_RW),
-        .EX_stall(stall_alu),
         .ForwardRW(ForwardRW_EX),
         .ForwardData(ForwardData_EX)
     );
@@ -220,6 +227,8 @@ endmodule
 
 
 module forwarding_unit (
+    clk,
+    rst_n,
     EX_RegWrite,
     EX_RW,
     MEM_RegWrite,
@@ -229,22 +238,49 @@ module forwarding_unit (
     ID_RX,
     ID_RY,
     ForwardX,
-    ForwardY
+    ForwardY,
+    ForwardData_EX,
+    ForwardData_MEM,
+    ForwardData_WB,
+    FD_EX,
+    FD_MEM,
+    FD_WB,
+    stall_dcache,
+    stall_load_word,
+    stall_forward
 );
-    input        EX_RegWrite;
-    input  [4:0] EX_RW;
-    input        MEM_RegWrite;
-    input  [4:0] MEM_RW;
-    input        WB_RegWrite;
-    input  [4:0] WB_RW;
-    input  [4:0] ID_RX;
-    input  [4:0] ID_RY;
-    output [1:0] ForwardX;
-    output [1:0] ForwardY;
+    input         clk;
+    input         rst_n;
+    input         EX_RegWrite;
+    input   [4:0] EX_RW;
+    input         MEM_RegWrite;
+    input   [4:0] MEM_RW;
+    input         WB_RegWrite;
+    input   [4:0] WB_RW;
+    input   [4:0] ID_RX;
+    input   [4:0] ID_RY;
+    output  [1:0] ForwardX;
+    output  [1:0] ForwardY;
+    input  [31:0] ForwardData_EX, ForwardData_MEM, ForwardData_WB;
+    output [31:0] FD_EX, FD_MEM, FD_WB;
+    input         stall_dcache;
+    input         stall_load_word;
+    output        stall_forward;
 
-    wire       ForwardEX_X, ForwardMEM_X, ForwardWB_X;
-    wire       ForwardEX_Y, ForwardMEM_Y, ForwardWB_Y;
-    reg  [1:0] ForwardX, ForwardY;
+    reg         state, state_next;
+    parameter S_IDLE = 1'b0;
+    parameter S_STALL = 1'b1;
+
+    reg         Forward;
+    wire        ForwardEX_X, ForwardMEM_X, ForwardWB_X;
+    wire        ForwardEX_Y, ForwardMEM_Y, ForwardWB_Y;
+    reg   [1:0] ForwardX, ForwardX_next; 
+    reg   [1:0] ForwardY, ForwardY_next;
+    reg  [31:0] FD_EX, FD_EX_next;
+    reg  [31:0] FD_MEM, FD_MEM_next;
+    reg  [31:0] FD_WB, FD_WB_next;
+    reg         stall_forward_r, stall_forward_w;
+    reg         stall_r, stall_w;
 
     assign ForwardEX_X = EX_RegWrite & (EX_RW!=0) & (EX_RW==ID_RX);
     assign ForwardEX_Y = EX_RegWrite & (EX_RW!=0) & (EX_RW==ID_RY);
@@ -252,17 +288,72 @@ module forwarding_unit (
     assign ForwardMEM_Y = MEM_RegWrite & (MEM_RW!=0) & (MEM_RW==ID_RY);
     assign ForwardWB_X = WB_RegWrite & (WB_RW!=0) & (WB_RW==ID_RX);
     assign ForwardWB_Y = WB_RegWrite & (WB_RW!=0) & (WB_RW==ID_RY);
+    assign stall_forward = stall_forward_w | stall_r;
 
     always @ (*) begin
-        if (ForwardEX_X)       ForwardX = 2'b01;
-        else if (ForwardMEM_X) ForwardX = 2'b10;
-        else if (ForwardWB_X)  ForwardX = 2'b11;
-        else                   ForwardX = 2'b00;
+        Forward = ForwardEX_X|ForwardMEM_X|ForwardWB_X|ForwardEX_Y|ForwardMEM_Y|ForwardWB_Y;
+        if (state == S_STALL) begin
+            ForwardX_next = ForwardX;
+            ForwardY_next = ForwardY;
+        end
+        else begin
+            ForwardX_next = {ForwardMEM_X | ForwardWB_X, ForwardWB_X | ForwardEX_X};
+            ForwardY_next = {ForwardMEM_Y | ForwardWB_Y, ForwardWB_Y | ForwardEX_Y};
+        end
+    end
+    
+    always @ (*) begin
+        FD_EX_next = FD_EX;
+        FD_MEM_next = FD_MEM;
+        FD_WB_next = FD_WB;
+        stall_forward_w = stall_forward_r;
+        stall_w = stall_r;
+        state_next = state;
 
-        if (ForwardEX_Y)       ForwardY = 2'b01;
-        else if (ForwardMEM_Y) ForwardY = 2'b10;
-        else if (ForwardWB_Y)  ForwardY = 2'b11;
-        else                   ForwardY = 2'b00;
+        case (state)
+        S_IDLE: begin
+            if (Forward) begin
+                FD_EX_next = ForwardData_EX;
+                FD_MEM_next = ForwardData_MEM;
+                FD_WB_next = ForwardData_WB;
+                stall_forward_w = 1'b1;
+                stall_w = 1'b1;
+            end
+            if (Forward & ~stall_load_word & ~stall_dcache) begin
+                state_next = S_STALL;
+            end
+        end
+        S_STALL: begin
+            if (~stall_load_word & ~stall_dcache) begin
+                stall_forward_w = 1'b0;
+                stall_w = 1'b0;
+                state_next = S_IDLE;
+            end
+        end
+        endcase
+    end
+
+    always @ (posedge clk or negedge rst_n) begin
+        if (~rst_n) begin
+            ForwardX <= 2'b0;
+            ForwardY <= 2'b0;
+            FD_EX <= 32'b0;
+            FD_MEM <= 32'b0;
+            FD_WB <= 32'b0;
+            stall_forward_r <= 1'b0;
+            stall_r <= 1'b0;
+            state <= S_IDLE;
+        end
+        else begin
+            ForwardX <= ForwardX_next;
+            ForwardY <= ForwardY_next;
+            FD_EX <= FD_EX_next;
+            FD_MEM <= FD_MEM_next;
+            FD_WB <= FD_WB_next;
+            stall_forward_r <= stall_forward_w;
+            stall_r <= stall_w;
+            state <= state_next;
+        end
     end
 endmodule
 
@@ -287,25 +378,23 @@ endmodule
 module stall_aggregator (
     stall_dcache,
     stall_icache,
-    stall_alu,
     stall_load_word,
+    stall_forward,
     stall_IF,
     stall_ID,
     bubble_ID,
     stall_EX,
-    bubble_EX,
     stall_MEM,
     stall_WB
 );
     input  stall_dcache;
     input  stall_icache;
-    input  stall_alu;
     input  stall_load_word;
+    input  stall_forward;
     output stall_IF;
     output stall_ID;
     output bubble_ID;
     output stall_EX;
-    output bubble_EX;
     output stall_MEM;
     output stall_WB;
 
@@ -313,7 +402,6 @@ module stall_aggregator (
     reg  stall_ID;
     reg  bubble_ID;
     reg  stall_EX;
-    reg  bubble_EX;
 
     assign stall_MEM = 1'b0;
     assign stall_WB = 1'b0;
@@ -324,28 +412,18 @@ module stall_aggregator (
             stall_ID = 1'b1;
             bubble_ID = 1'b0;
             stall_EX = 1'b1;
-            bubble_EX = 1'b0;
         end
-        else if (stall_load_word) begin
+        else if (stall_load_word | stall_forward) begin
             stall_IF = 1'b1;
             stall_ID = 1'b1;
             bubble_ID = 1'b1;
             stall_EX = 1'b0;
-            bubble_EX = 1'b0;
-        end
-        else if (stall_alu) begin
-            stall_IF = 1'b1;
-            stall_ID = 1'b1;
-            bubble_ID = 1'b0;
-            stall_EX = 1'b1;
-            bubble_EX = 1'b1;
         end
         else begin
             stall_IF = 1'b0;
             stall_ID = 1'b0;
             bubble_ID = 1'b0;
             stall_EX = 1'b0;
-            bubble_EX = 1'b0;
         end
     end
 endmodule
