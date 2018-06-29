@@ -127,40 +127,39 @@ module register_file(
             5'd31: busY = r_r31;
         endcase
 
-        r_w0 = 32'b0;
-        r_w1 = r_r1;
-        r_w2 = r_r2;
-        r_w3 = r_r3;
-        r_w4 = r_r4;
-        r_w5 = r_r5;
-        r_w6 = r_r6;
-        r_w7 = r_r7;
-        r_w8 = r_r8;
-        r_w9 = r_r9;
-        r_w10 = r_r10;
-        r_w11 = r_r11;
-        r_w12 = r_r12;
-        r_w13 = r_r13;
-        r_w14 = r_r14;
-        r_w15 = r_r15;
-        r_w16 = r_r16;
-        r_w17 = r_r17;
-        r_w18 = r_r18;
-        r_w19 = r_r19;
-        r_w20 = r_r20;
-        r_w21 = r_r21;
-        r_w22 = r_r22;
-        r_w23 = r_r23;
-        r_w24 = r_r24;
-        r_w25 = r_r25;
-        r_w26 = r_r26;
-        r_w27 = r_r27;
-        r_w28 = r_r28;
-        r_w29 = r_r29;
-        r_w30 = r_r30;
-        r_w31 = r_r31;
-
         if (WEN) begin
+            r_w0 = 32'b0;
+            r_w1 = r_r1;
+            r_w2 = r_r2;
+            r_w3 = r_r3;
+            r_w4 = r_r4;
+            r_w5 = r_r5;
+            r_w6 = r_r6;
+            r_w7 = r_r7;
+            r_w8 = r_r8;
+            r_w9 = r_r9;
+            r_w10 = r_r10;
+            r_w11 = r_r11;
+            r_w12 = r_r12;
+            r_w13 = r_r13;
+            r_w14 = r_r14;
+            r_w15 = r_r15;
+            r_w16 = r_r16;
+            r_w17 = r_r17;
+            r_w18 = r_r18;
+            r_w19 = r_r19;
+            r_w20 = r_r20;
+            r_w21 = r_r21;
+            r_w22 = r_r22;
+            r_w23 = r_r23;
+            r_w24 = r_r24;
+            r_w25 = r_r25;
+            r_w26 = r_r26;
+            r_w27 = r_r27;
+            r_w28 = r_r28;
+            r_w29 = r_r29;
+            r_w30 = r_r30;
+            r_w31 = r_r31;
             case (RW)
                 5'd0: r_w0 = 32'b0;
                 5'd1: r_w1 = busW;
@@ -195,6 +194,40 @@ module register_file(
                 5'd30: r_w30 = busW;
                 5'd31: r_w31 = busW;
             endcase
+        end
+        else begin
+            r_w0 = 32'b0;
+            r_w1 = r_r1;
+            r_w2 = r_r2;
+            r_w3 = r_r3;
+            r_w4 = r_r4;
+            r_w5 = r_r5;
+            r_w6 = r_r6;
+            r_w7 = r_r7;
+            r_w8 = r_r8;
+            r_w9 = r_r9;
+            r_w10 = r_r10;
+            r_w11 = r_r11;
+            r_w12 = r_r12;
+            r_w13 = r_r13;
+            r_w14 = r_r14;
+            r_w15 = r_r15;
+            r_w16 = r_r16;
+            r_w17 = r_r17;
+            r_w18 = r_r18;
+            r_w19 = r_r19;
+            r_w20 = r_r20;
+            r_w21 = r_r21;
+            r_w22 = r_r22;
+            r_w23 = r_r23;
+            r_w24 = r_r24;
+            r_w25 = r_r25;
+            r_w26 = r_r26;
+            r_w27 = r_r27;
+            r_w28 = r_r28;
+            r_w29 = r_r29;
+            r_w30 = r_r30;
+            r_w31 = r_r31;
         end
     end
 

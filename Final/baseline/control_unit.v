@@ -36,7 +36,7 @@ module control_unit (
     output       MemToReg;
     output       RegWrite;
 
-    reg  [31:0] ctrl;
+    reg  [15:0] ctrl;
     assign {    Jump,
                 JumpReg,
                 Branch,

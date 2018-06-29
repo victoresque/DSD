@@ -19,7 +19,7 @@ module MIPS_Pipeline (
     D_addr,
     D_wdata,
     D_stall,
-    D_rdata,
+    D_rdata
 );
     input         clk;
     input         rst_n;
@@ -39,21 +39,21 @@ module MIPS_Pipeline (
 //======== reg/wire ===========================================
     wire        IF_BranchOrJump;
     wire [31:0] IF_branch_jump_addr;
-    wire [31:0] ID_ctrl;
+    wire [15:0] ID_ctrl;
     wire [31:0] ID_pc;
     wire [31:0] ID_inst;
     wire        ID_RegWrite;
     wire  [4:0] ID_RW;
     wire [31:0] ID_busW;
-    wire [31:0] EX_ctrl;
+    wire [12:0] EX_ctrl;
     wire [31:0] EX_busX;
     wire [31:0] EX_busY;
     wire [31:0] EX_inst;
-    wire [31:0] MEM_ctrl;
+    wire  [3:0] MEM_ctrl;
     wire [31:0] MEM_alu_out;
     wire [31:0] MEM_wdata;
     wire  [4:0] MEM_RW;
-    wire [31:0] WB_ctrl;
+    wire  [1:0] WB_ctrl;
     wire [31:0] WB_mem_data;
     wire [31:0] WB_reg_data;
     wire  [4:0] WB_RW;
@@ -223,7 +223,7 @@ module forwarding_unit (
     ID_RX,
     ID_RY,
     ForwardX,
-    ForwardY,
+    ForwardY
 );
     input        EX_RegWrite;
     input  [4:0] EX_RW;

@@ -350,18 +350,22 @@ module L2_cache(
     parameter S_READ_WRITE = 3'd3;
 
 //==== wire/reg definition ================================
+    parameter N_BLOCKS = 64;
+    parameter INDEX_WIDTH = 6; // log(N_BLOCKS)
+    parameter TAG_WIDTH = 28 - INDEX_WIDTH;
+    parameter BLOCK_SIZE = 1 + 1 + TAG_WIDTH + 128;
     // proc_addr: 28b
     // tag: 22b, index: 6b
     // block: valid(1b) + dirty(1b) + tag(22b) + data(128b) = 152b
-    reg  [151:0] block [0:63];
-    reg  [151:0] block_next [0:63];
-    reg   [21:0] proc_tag;
-    reg    [5:0] proc_index;
+    reg  [BLOCK_SIZE-1:0] block [0:N_BLOCKS-1];
+    reg  [BLOCK_SIZE-1:0] block_next [0:N_BLOCKS-1];
+    reg   [TAG_WIDTH-1:0] proc_tag;
+    reg    [INDEX_WIDTH-1:0] proc_index;
 
-    reg  [151:0] proc_block;
+    reg  [BLOCK_SIZE-1:0] proc_block;
     reg          proc_block_valid;
     reg          proc_block_dirty;
-    reg   [21:0] proc_block_tag;
+    reg   [TAG_WIDTH-1:0] proc_block_tag;
     reg  [127:0] proc_block_data;
 
     reg  [127:0] proc_new_data;
@@ -411,15 +415,15 @@ module L2_cache(
     assign buf_wdata = buf_wdata_w;
 
     always @ (*) begin
-        for (i=0; i<64; i=i+1) block_next[i] = block[i];
+        for (i=0; i<N_BLOCKS; i=i+1) block_next[i] = block[i];
 
-        proc_tag = proc_addr[27:6];
-        proc_index = proc_addr[5:0];
+        proc_tag = proc_addr[27:INDEX_WIDTH];
+        proc_index = proc_addr[INDEX_WIDTH-1:0];
 
         proc_block = block[proc_index];
-        proc_block_valid = proc_block[151];
-        proc_block_dirty = proc_block[150];
-        proc_block_tag = proc_block[149:128];
+        proc_block_valid = proc_block[BLOCK_SIZE-1];
+        proc_block_dirty = proc_block[BLOCK_SIZE-2];
+        proc_block_tag = proc_block[BLOCK_SIZE-3:128];
         proc_block_data = proc_block[127:0];
         hit = proc_tag == proc_block_tag;
 
@@ -557,7 +561,7 @@ module L2_cache(
 //==== sequential circuit =================================
     always @ (posedge clk or posedge proc_reset) begin
         if(proc_reset) begin
-            for (i=0; i<64; i=i+1) block[i] <= 152'b0;
+            for (i=0; i<N_BLOCKS; i=i+1) block[i] <= 256'b0;
             proc_stall_r <= 1'b0;
             proc_rdata_r <= 32'b0;
             buf_addr_r <= 28'b0;
@@ -566,7 +570,7 @@ module L2_cache(
             state <= S_IDLE;
         end
         else begin
-            for (i=0; i<64; i=i+1) block[i] <= block_next[i];
+            for (i=0; i<N_BLOCKS; i=i+1) block[i] <= block_next[i];
             proc_stall_r <= proc_stall_w;
             proc_rdata_r <= proc_rdata_w;
             buf_addr_r <= buf_addr_w;

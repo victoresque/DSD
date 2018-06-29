@@ -151,26 +151,23 @@ module cache(
     end
 
     always @ (*) begin
-        for (i=0; i<8; i=i+1) block_next[i] = block[i];
-        proc_stall_w = proc_stall_r;
-        proc_rdata_w = proc_rdata_r;
-        buf_addr_w = proc_addr[29:2];
-        buf_wdata_w = buf_wdata_r;
-        buf_write_request_w = buf_write_request_r;
-        state_next = state;
-        buf_read = 1'b0;
-        buf_write = 1'b0;
-
         case (state)
         S_IDLE: begin
             if (proc_read) begin
-                proc_stall_w = 1'b1;
                 if (proc_block_valid) begin
                     if (hit) begin
                         // * read hit, valid, clean/dirty
                         // > read from cache
                         proc_rdata_w = proc_block_word;
                         proc_stall_w = 1'b0;
+
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        buf_addr_w = proc_addr[29:2];
+                        buf_wdata_w = buf_wdata_r;
+                        buf_write_request_w = buf_write_request_r;
+                        state_next = state;
+                        buf_read = 1'b0;
+                        buf_write = 1'b0;
                     end
                     else if (proc_block_dirty) begin
                         // * read miss, valid, dirty
@@ -181,6 +178,22 @@ module cache(
                             buf_wdata_w = proc_block_data;
                             proc_stall_w = 1'b1;
                             state_next = S_READ_WRITE;
+
+                            for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                            proc_rdata_w = proc_rdata_r;
+                            buf_addr_w = proc_addr[29:2];
+                            buf_write_request_w = buf_write_request_r;
+                        end
+                        else begin
+                            for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                            proc_stall_w = 1'b1;
+                            proc_rdata_w = proc_rdata_r;
+                            buf_addr_w = proc_addr[29:2];
+                            buf_wdata_w = buf_wdata_r;
+                            buf_write_request_w = buf_write_request_r;
+                            state_next = state;
+                            buf_read = 1'b0;
+                            buf_write = 1'b0;
                         end
                     end
                     else begin
@@ -191,6 +204,23 @@ module cache(
                             buf_write = 1'b0;
                             proc_stall_w = 1'b1;
                             state_next = S_MEM_READ;
+
+                            for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                            proc_rdata_w = proc_rdata_r;
+                            buf_addr_w = proc_addr[29:2];
+                            buf_wdata_w = buf_wdata_r;
+                            buf_write_request_w = buf_write_request_r;
+                        end
+                        else begin
+                            for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                            proc_stall_w = 1'b1;
+                            proc_rdata_w = proc_rdata_r;
+                            buf_addr_w = proc_addr[29:2];
+                            buf_wdata_w = buf_wdata_r;
+                            buf_write_request_w = buf_write_request_r;
+                            state_next = state;
+                            buf_read = 1'b0;
+                            buf_write = 1'b0;
                         end
                     end
                 end
@@ -202,14 +232,39 @@ module cache(
                         buf_write = 1'b0;
                         proc_stall_w = 1'b1;
                         state_next = S_MEM_READ;
+                        
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        proc_rdata_w = proc_rdata_r;
+                        buf_addr_w = proc_addr[29:2];
+                        buf_wdata_w = buf_wdata_r;
+                        buf_write_request_w = buf_write_request_r;
+                    end
+                    else begin
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        proc_stall_w = 1'b1;
+                        proc_rdata_w = proc_rdata_r;
+                        buf_addr_w = proc_addr[29:2];
+                        buf_wdata_w = buf_wdata_r;
+                        buf_write_request_w = buf_write_request_r;
+                        state_next = state;
+                        buf_read = 1'b0;
+                        buf_write = 1'b0;
                     end
                 end
             end
             else if (proc_write) begin
-                proc_stall_w = 1'b1;
                 if (proc_block_valid & hit) begin
                     // * write hit, valid, clean/dirty
                     // > update the word in cache block
+                    for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                    proc_rdata_w = proc_rdata_r;
+                    buf_addr_w = proc_addr[29:2];
+                    buf_wdata_w = buf_wdata_r;
+                    buf_write_request_w = buf_write_request_r;
+                    state_next = state;
+                    buf_read = 1'b0;
+                    buf_write = 1'b0;
+
                     block_next[proc_index] = {1'b1, 1'b1, proc_tag, proc_new_data};
                     proc_stall_w = 1'b0;
                 end
@@ -223,6 +278,21 @@ module cache(
                         buf_write_request_w = 1'b1;
                         proc_stall_w = 1'b1;
                         state_next = S_MEM_READ_REPLACE;
+
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        proc_rdata_w = proc_rdata_r;
+                        buf_addr_w = proc_addr[29:2];
+                    end
+                    else begin
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        proc_stall_w = 1'b1;
+                        proc_rdata_w = proc_rdata_r;
+                        buf_addr_w = proc_addr[29:2];
+                        buf_wdata_w = buf_wdata_r;
+                        buf_write_request_w = buf_write_request_r;
+                        state_next = state;
+                        buf_read = 1'b0;
+                        buf_write = 1'b0;
                     end
                 end
                 else begin
@@ -234,12 +304,45 @@ module cache(
                         buf_write = 1'b0;
                         proc_stall_w = 1'b1;
                         state_next = S_MEM_READ_REPLACE;
+
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        proc_rdata_w = proc_rdata_r;
+                        buf_addr_w = proc_addr[29:2];
+                        buf_wdata_w = buf_wdata_r;
+                        buf_write_request_w = buf_write_request_r;
+                    end
+                    else begin
+                        for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                        proc_stall_w = 1'b1;
+                        proc_rdata_w = proc_rdata_r;
+                        buf_addr_w = proc_addr[29:2];
+                        buf_wdata_w = buf_wdata_r;
+                        buf_write_request_w = buf_write_request_r;
+                        state_next = state;
+                        buf_read = 1'b0;
+                        buf_write = 1'b0;
                     end
                 end
+            end
+            else begin
+                for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                proc_stall_w = proc_stall_r;
+                proc_rdata_w = proc_rdata_r;
+                buf_addr_w = proc_addr[29:2];
+                buf_wdata_w = buf_wdata_r;
+                buf_write_request_w = buf_write_request_r;
+                state_next = state;
+                buf_read = 1'b0;
+                buf_write = 1'b0;
             end
         end
         S_MEM_READ: begin
             if (~buf_stall) begin
+                for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                buf_addr_w = proc_addr[29:2];
+                buf_wdata_w = buf_wdata_r;
+                buf_write_request_w = buf_write_request_r;
+
                 buf_read = 1'b0;
                 buf_write = 1'b0;
                 proc_rdata_w = buf_rdata_word;
@@ -247,26 +350,65 @@ module cache(
                 block_next[proc_index] = {1'b1, 1'b0, proc_tag, buf_rdata};
                 state_next = S_IDLE;
             end
+            else begin
+                for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                proc_stall_w = proc_stall_r;
+                proc_rdata_w = proc_rdata_r;
+                buf_addr_w = proc_addr[29:2];
+                buf_wdata_w = buf_wdata_r;
+                buf_write_request_w = buf_write_request_r;
+                state_next = state;
+                buf_read = 1'b0;
+                buf_write = 1'b0;
+            end
         end
         S_MEM_READ_REPLACE: begin
             if (~buf_stall) begin
                 if (~buf_write_request_r) begin
+                    for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                    proc_rdata_w = proc_rdata_r;
+                    buf_addr_w = proc_addr[29:2];
+                    buf_wdata_w = buf_wdata_r;
+                    buf_write_request_w = buf_write_request_r;
+                    proc_stall_w = 1'b0;
+                    block_next[proc_index] = {1'b1, 1'b1, proc_tag, proc_replace_data};
+                    state_next = S_IDLE;
+
                     buf_read = 1'b0;
                     buf_write = 1'b0;
                 end
                 else begin
+                    for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                    proc_rdata_w = proc_rdata_r;
+                    buf_wdata_w = buf_wdata_r;
+                    proc_stall_w = 1'b0;
+                    block_next[proc_index] = {1'b1, 1'b1, proc_tag, proc_replace_data};
+                    state_next = S_IDLE;
+
                     buf_write = 1'b1;
                     buf_read = 1'b0;
                     buf_addr_w = {proc_block_tag, proc_index};
                     buf_write_request_w = 1'b0;
                 end
-                proc_stall_w = 1'b0;
-                block_next[proc_index] = {1'b1, 1'b1, proc_tag, proc_replace_data};
-                state_next = S_IDLE;
+            end
+            else begin
+                for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                proc_stall_w = proc_stall_r;
+                proc_rdata_w = proc_rdata_r;
+                buf_addr_w = proc_addr[29:2];
+                buf_wdata_w = buf_wdata_r;
+                buf_write_request_w = buf_write_request_r;
+                state_next = state;
+                buf_read = 1'b0;
+                buf_write = 1'b0;
             end
         end
         S_READ_WRITE: begin
             if (~buf_stall) begin
+                for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                buf_wdata_w = buf_wdata_r;
+                buf_write_request_w = buf_write_request_r;
+
                 buf_read = 1'b0;
                 buf_write = 1'b1;
                 buf_addr_w = {proc_block_tag, proc_index};
@@ -275,6 +417,28 @@ module cache(
                 block_next[proc_index] = {1'b1, 1'b0, proc_tag, buf_rdata};
                 state_next = S_IDLE;
             end
+            else begin
+                for (i=0; i<8; i=i+1) block_next[i] = block[i];
+                proc_stall_w = proc_stall_r;
+                proc_rdata_w = proc_rdata_r;
+                buf_addr_w = proc_addr[29:2];
+                buf_wdata_w = buf_wdata_r;
+                buf_write_request_w = buf_write_request_r;
+                state_next = state;
+                buf_read = 1'b0;
+                buf_write = 1'b0;
+            end
+        end
+        default: begin
+            for (i=0; i<8; i=i+1) block_next[i] = block[i];
+            proc_stall_w = proc_stall_r;
+            proc_rdata_w = proc_rdata_r;
+            buf_addr_w = proc_addr[29:2];
+            buf_wdata_w = buf_wdata_r;
+            buf_write_request_w = buf_write_request_r;
+            state_next = state;
+            buf_read = 1'b0;
+            buf_write = 1'b0;
         end
         endcase
     end
@@ -300,7 +464,6 @@ module cache(
             state <= state_next;
         end
     end
-
 endmodule
 
 
@@ -358,14 +521,6 @@ module buffer(
     assign mem_wdata = mem_wdata_r;
 
     always @ (*) begin
-        buf_rdata_w = buf_rdata_r;
-        buf_stall_w = buf_stall_r;
-        mem_addr_w = mem_addr_r;
-        mem_read_w = mem_read_r;
-        mem_write_w = mem_write_r;
-        mem_wdata_w = mem_wdata_r;
-        state_next = state;
-
         case (state)
         S_IDLE: begin
             if (buf_write) begin
@@ -374,12 +529,28 @@ module buffer(
                 mem_addr_w = buf_addr;
                 mem_wdata_w = buf_wdata;
                 state_next = S_WRITE;
+
+                buf_rdata_w = buf_rdata_r;
+                mem_read_w = mem_read_r;
             end
             else if (buf_read) begin
                 buf_stall_w = 1'b1;
                 mem_read_w = 1'b1;
                 mem_addr_w = buf_addr;
                 state_next = S_READ;
+
+                buf_rdata_w = buf_rdata_r;
+                mem_write_w = mem_write_r;
+                mem_wdata_w = mem_wdata_r;
+            end
+            else begin
+                buf_rdata_w = buf_rdata_r;
+                buf_stall_w = buf_stall_r;
+                mem_addr_w = mem_addr_r;
+                mem_read_w = mem_read_r;
+                mem_write_w = mem_write_r;
+                mem_wdata_w = mem_wdata_r;
+                state_next = state;
             end
         end
         S_WRITE: begin
@@ -387,6 +558,20 @@ module buffer(
                 buf_stall_w = 1'b0;
                 mem_write_w = 1'b0;
                 state_next = S_IDLE;
+
+                buf_rdata_w = buf_rdata_r;
+                mem_addr_w = mem_addr_r;
+                mem_read_w = mem_read_r;
+                mem_wdata_w = mem_wdata_r;
+            end
+            else begin
+                buf_rdata_w = buf_rdata_r;
+                buf_stall_w = buf_stall_r;
+                mem_addr_w = mem_addr_r;
+                mem_read_w = mem_read_r;
+                mem_write_w = mem_write_r;
+                mem_wdata_w = mem_wdata_r;
+                state_next = state;
             end
         end
         S_READ: begin
@@ -395,7 +580,29 @@ module buffer(
                 buf_rdata_w = mem_rdata;
                 mem_read_w = 1'b0;
                 state_next = S_IDLE;
+
+                mem_addr_w = mem_addr_r;
+                mem_write_w = mem_write_r;
+                mem_wdata_w = mem_wdata_r;
             end
+            else begin
+                buf_rdata_w = buf_rdata_r;
+                buf_stall_w = buf_stall_r;
+                mem_addr_w = mem_addr_r;
+                mem_read_w = mem_read_r;
+                mem_write_w = mem_write_r;
+                mem_wdata_w = mem_wdata_r;
+                state_next = state;
+            end
+        end
+        default: begin
+            buf_rdata_w = buf_rdata_r;
+            buf_stall_w = buf_stall_r;
+            mem_addr_w = mem_addr_r;
+            mem_read_w = mem_read_r;
+            mem_write_w = mem_write_r;
+            mem_wdata_w = mem_wdata_r;
+            state_next = state;
         end
         endcase
     end

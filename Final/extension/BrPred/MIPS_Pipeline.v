@@ -19,7 +19,7 @@ module MIPS_Pipeline (
     D_addr,
     D_wdata,
     D_stall,
-    D_rdata,
+    D_rdata
 );
     input         clk;
     input         rst_n;
